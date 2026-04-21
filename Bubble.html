@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bubble Sort — Simulador</title>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; overflow: hidden; }
+body {
+  background: #212121;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SHELL ─────────────────────────────────────── */
+.shell { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── HEADER ────────────────────────────────────── */
+.hdr {
+  height: 42px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 16px;
+  border-bottom: 1px solid #2e2e2e;
+  background: #1a1a1a;
+}
+.hdr-title { font-size: 14px; font-weight: 600; color: #ffffff; letter-spacing: -0.01em; }
+.hdr-divider { width: 1px; height: 14px; background: #555; }
+.hdr-sub { font-size: 12px; color: #cccccc; }
+.hdr-spacer { flex: 1; }
+.status-badge {
+  font-family: Menlo, Consolas, 'Courier New', monospace;
+  font-size: 10px; padding: 2px 8px;
+  border: 1px solid; border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+.status-badge.idle    { color: #cccccc; border-color: #666; }
+.status-badge.running { color: #f0a030; border-color: #f0a030; }
+.status-badge.paused  { color: #cccccc; border-color: #888; }
+.status-badge.done    { color: #4aaa5a; border-color: #4aaa5a; }
+
+/* ── FORM BAR ──────────────────────────────────── */
+.form-bar {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 16px;
+  border-bottom: 1px solid #2e2e2e;
+  background: #1a1a1a;
+}
+.form-bar input {
+  background: #2a2a2a; border: 1px solid #555;
+  color: #ffffff; padding: 5px 8px;
+  font-family: inherit; font-size: 12px;
+  outline: none; border-radius: 5px;
+  transition: border-color 0.12s;
+}
+.form-bar input:focus { border-color: #f0a030; }
+.form-bar input::placeholder { color: #aaaaaa; }
+.input-name { width: 160px; }
+.input-num  { width: 88px; }
+.form-sep   { width: 1px; height: 18px; background: #666; margin: 0 2px; flex-shrink: 0; }
+.btn-add {
+  background: #f0a030; border: none; color: #1a1a1a;
+  padding: 6px 14px; font-family: inherit; font-size: 12px; font-weight: 500;
+  cursor: pointer; border-radius: 5px; transition: background 0.1s; white-space: nowrap;
+}
+.btn-add:hover { background: #f5b350; }
+.btn-add:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-secondary {
+  background: transparent; border: 1px solid #555; color: #dddddd;
+  padding: 5px 12px; font-family: inherit; font-size: 12px;
+  cursor: pointer; border-radius: 5px; transition: all 0.1s; white-space: nowrap;
+}
+.btn-secondary:hover { border-color: #888; color: #ffffff; }
+.btn-secondary:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-danger {
+  background: transparent; border: 1px solid #555; color: #dddddd;
+  padding: 5px 12px; font-family: inherit; font-size: 12px;
+  cursor: pointer; border-radius: 5px; transition: all 0.1s;
+}
+.btn-danger:hover { border-color: #c8392b; color: #ef4444; }
+.btn-danger:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── WORKSPACE ─────────────────────────────────── */
+.workspace { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+
+/* ── LEFT PANEL ────────────────────────────────── */
+.left-panel {
+  width: 192px; flex-shrink: 0;
+  border-right: 1px solid #2e2e2e;
+  border-radius: 0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  background: #262626;
+}
+.panel-head {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #ffffff;
+  padding: 8px 10px 6px;
+  border-bottom: 1px solid #2e2e2e; flex-shrink: 0;
+}
+.pseudo-block { flex: 1; overflow: hidden; padding: 8px 0 4px; }
+.pseudocode {
+  font-family: Menlo, Consolas, 'Courier New', monospace;
+  font-size: 11px; line-height: 1.75;
+}
+.pline {
+  display: block; padding: 0 10px; white-space: pre; color: #cccccc;
+  transition: background 0.1s, color 0.1s;
+}
+.pline.active {
+  background: rgba(240,160,48,0.15); color: #f0a030; font-weight: 700;
+}
+.pline.active::before {
+  content: '▸'; margin-left: -8px; margin-right: 2px;
+  font-size: 9px; color: #f0a030;
+}
+.pline.done-line { color: #4aaa5a; }
+
+/* metrics strip */
+.metrics-strip {
+  flex-shrink: 0; display: flex;
+  border-top: 1px solid #2e2e2e;
+}
+.metric-cell {
+  flex: 1; padding: 8px 4px 6px; text-align: center;
+  border-right: 1px solid #2e2e2e;
+}
+.metric-cell:last-child { border-right: none; }
+.metric-n {
+  font-family: Menlo, Consolas, monospace;
+  font-size: 18px; font-weight: 700; color: #ffffff;
+  line-height: 1; display: block;
+}
+.metric-n.accent { color: #f0a030; }
+.metric-n.green  { color: #4aaa5a; }
+.metric-lbl {
+  font-size: 8px; color: #cccccc;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  margin-top: 3px; display: block;
+}
+.status-line {
+  border-top: 1px solid #2e2e2e; padding: 6px 10px;
+  font-family: Menlo, Consolas, monospace; font-size: 10px; color: #cccccc;
+  flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-height: 28px; display: flex; align-items: center;
+}
+.status-line .hl { color: #f0a030; font-weight: 600; }
+
+/* ── CHART PANEL ───────────────────────────────── */
+.chart-panel {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden; min-width: 0;
+  background: #212121;
+  border-left: 1px solid #2e2e2e;
+  border-right: 1px solid #2e2e2e;
+}
+.chart-legend-row {
+  height: 28px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 14px; border-bottom: 1px solid #2e2e2e;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #cccccc; }
+.legend-dot  { width: 8px; height: 8px; flex-shrink: 0; border-radius: 2px; }
+.chart-crit-label { margin-left: auto; font-size: 10px; color: #cccccc; font-family: Menlo, Consolas, monospace; }
+
+.chart-body {
+  flex: 1; display: flex; align-items: flex-end;
+  padding: 8px 14px 0; gap: 3px;
+  overflow: hidden; min-height: 0; position: relative;
+}
+/* subtle horizontal grid */
+.chart-grid {
+  position: absolute; inset: 8px 14px 0;
+  display: flex; flex-direction: column; justify-content: space-between;
+  pointer-events: none; z-index: 0;
+}
+.chart-grid-line { width: 100%; height: 1px; background: #2a2a2a; }
+
+.bar-col {
+  display: flex; flex-direction: column; align-items: center;
+  flex: 1; min-width: 0; max-width: 88px;
+  position: relative; z-index: 1;
+}
+.bar-val {
+  font-family: Menlo, Consolas, monospace; font-size: 9px;
+  font-weight: 700; color: #dddddd; margin-bottom: 3px; line-height: 1;
+}
+.bar-val.cmp { color: #f0a030; }
+.bar-val.swp { color: #ef4444; }
+.bar-val.srt { color: #4aaa5a; }
+@keyframes swapBounce {
+  0%   { transform: scaleY(1); }
+  30%  { transform: scaleY(0.88); }
+  70%  { transform: scaleY(1.04); }
+  100% { transform: scaleY(1); }
+}
+.bar {
+  width: 100%;
+  transition: height 0.22s ease, background-color 0.12s;
+  min-height: 2px; border-radius: 2px 2px 0 0;
+  transform-origin: bottom;
+}
+.bar.normal    { background: #3d4451; }
+.bar.comparing { background: #f0a030; }
+.bar.swapping  { background: #e05040; animation: swapBounce 0.22s ease; }
+.bar.sorted    { background: #2d6a40; border-top: 1px solid #4aaa5a; }
+.bar-id {
+  font-family: Menlo, Consolas, monospace; font-size: 9px;
+  color: #cccccc; margin-top: 4px; padding-bottom: 6px; line-height: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%; text-align: center;
+}
+
+/* ── RIGHT PANEL ───────────────────────────────── */
+.right-panel {
+  width: 278px; flex-shrink: 0;
+  border-left: 1px solid #2e2e2e;
+  display: flex; flex-direction: column;
+  overflow: hidden; background: #262626;
+}
+.table-header-row {
+  height: 28px; flex-shrink: 0;
+  display: flex; align-items: center;
+  padding: 0 10px;
+  border-bottom: 1px solid #2e2e2e;
+  background: #262626;
+}
+.table-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+thead th {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: #cccccc;
+  text-align: left; padding: 5px 6px;
+  border-bottom: 1px solid #2e2e2e;
+  position: sticky; top: 0; background: #262626; z-index: 2;
+}
+thead th.ac { color: #f0a030; }
+tbody tr { border-bottom: 1px solid #2a2a2a; }
+tbody tr:nth-child(even) { background: #242424; }
+tbody tr:nth-child(odd)  { background: #262626; }
+tbody tr:hover { background: #2e2e2e; }
+tbody tr.row-cmp { background: rgba(240,160,48,0.12) !important; }
+tbody tr.row-swp { background: rgba(224,80,64,0.12) !important; }
+tbody tr.row-srt { background: rgba(74,170,90,0.10) !important; }
+td {
+  padding: 5px 6px; font-size: 11px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: #ffffff;
+}
+td.mono { font-family: Menlo, Consolas, monospace; }
+td.ac   { color: #f0a030; font-family: Menlo, Consolas, monospace; font-weight: 600; }
+td.dim  { color: #aaaaaa; font-family: Menlo, Consolas, monospace; font-size: 10px; }
+.remove-btn {
+  background: none; border: none; color: #aaaaaa;
+  cursor: pointer; font-size: 11px; padding: 0 2px; line-height: 1;
+  transition: color 0.1s; display: block; width: 100%; text-align: center;
+}
+.remove-btn:hover { color: #ef4444; }
+.remove-btn:disabled { opacity: 0.15; pointer-events: none; }
+.empty-table {
+  padding: 24px 16px; text-align: center;
+  font-size: 12px; color: #aaaaaa;
+}
+
+/* ── CONTROLS BAR ──────────────────────────────── */
+.controls-bar {
+  flex-shrink: 0; height: 50px;
+  border-top: 1px solid #1a1a1a;
+  display: flex; align-items: center;
+  padding: 0 16px;
+  background: #181818;
+}
+.ctrl-sep { width: 1px; height: 18px; background: #2e2e2e; margin: 0 12px; flex-shrink: 0; }
+.ctrl-group { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.ctrl-label { font-size: 10px; color: #cccccc; letter-spacing: 0.06em; text-transform: uppercase; }
+.ctrl-select {
+  background: #222; border: 1px solid #555; color: #ffffff;
+  padding: 5px 24px 5px 8px; font-family: inherit; font-size: 11px;
+  outline: none; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23ccc'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 7px center;
+  border-radius: 5px; transition: border-color 0.12s;
+}
+.ctrl-select:hover { border-color: #777; }
+.ctrl-select:focus { border-color: #f0a030; outline: none; }
+.ctrl-range { display: flex; align-items: center; gap: 7px; }
+input[type=range] { width: 80px; accent-color: #f0a030; cursor: pointer; }
+.speed-val { font-family: Menlo, Consolas, monospace; font-size: 10px; color: #cccccc; width: 38px; }
+.btn {
+  font-family: inherit; font-size: 12px; font-weight: 500;
+  padding: 6px 14px; border: 1px solid; cursor: pointer;
+  transition: all 0.1s; white-space: nowrap; flex-shrink: 0;
+  border-radius: 5px;
+}
+.btn-run   { background: #f0a030; border-color: #f0a030; color: #1a1a1a; }
+.btn-run:hover { background: #f5b350; border-color: #f5b350; }
+.btn-pause { background: transparent; border-color: #555; color: #dddddd; }
+.btn-pause:hover { border-color: #888; color: #ffffff; }
+.btn-reset { background: transparent; border-color: #444; color: #cccccc; }
+.btn-reset:hover { border-color: #666; color: #ffffff; }
+.btn:disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
+.ctrl-status {
+  flex: 1; font-family: Menlo, Consolas, monospace;
+  font-size: 10px; color: #cccccc;
+  text-align: right; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.ctrl-status .hl { color: #f0a030; }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #555; }
+::-webkit-scrollbar-thumb:hover { background: #777; }
+</style>
+<template id="__bundler_thumbnail" data-bg-color="#212121">
+  <svg viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg">
+    <!-- Bar chart silhouette -->
+    <rect x="10" y="42" width="12" height="28" rx="1" fill="#374151"/>
+    <rect x="26" y="28" width="12" height="42" rx="1" fill="#374151"/>
+    <rect x="42" y="52" width="12" height="18" rx="1" fill="#f59e0b"/>
+    <rect x="58" y="52" width="12" height="18" rx="1" fill="#f59e0b"/>
+    <rect x="74" y="18" width="12" height="52" rx="1" fill="#374151"/>
+    <rect x="90" y="34" width="12" height="36" rx="1" fill="#22c55e"/>
+    <!-- baseline -->
+    <line x1="10" y1="70" x2="102" y2="70" stroke="#e0e0e0" stroke-width="1"/>
+    <!-- title text placeholder -->
+    <rect x="10" y="6" width="40" height="5" rx="1" fill="#374151" opacity="0.7"/>
+    <rect x="55" y="6" width="25" height="5" rx="1" fill="#d1d5db"/>
+  </svg>
+</template>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ── Pseudocode ───────────────────────────────── */
+const PSEUDO = [
+{ id: 0, text: 'BubbleSort(A, crit):' },
+{ id: 1, text: '  n ← len(A)' },
+{ id: 2, text: '  para i = 0 → n−1:' },
+{ id: 3, text: '    para j = 0 → n−i−2:' },
+{ id: 4, text: '      si A[j]>A[j+1]:' },
+{ id: 5, text: '        swap(A[j],A[j+1])' },
+{ id: 6, text: '      fin si' },
+{ id: 7, text: '    fin para' },
+{ id: 8, text: '  fin para' },
+{ id: 9, text: 'fin' }];
+
+
+/* ── Data helpers ─────────────────────────────── */
+let _uid = 0;
+function mkOrder(nombre, prod, entr, prio) {
+  return { id: _uid++, nombre, tiempo_produccion: prod, tiempo_entrega: entr, prioridad: prio };
+}
+function randomOrder() {
+  const noms = ['Pizzas', 'Torta', 'Empanadas', 'Sushi', 'Tacos', 'Milanesas', 'Burgers', 'Pasta', 'Wraps', 'Paella'];
+  return mkOrder(
+    noms[Math.floor(Math.random() * noms.length)],
+    Math.floor(Math.random() * 241) + 10,
+    Math.floor(Math.random() * 371) + 30,
+    Math.floor(Math.random() * 5) + 1
+  );
+}
+function initOrders() {_uid = 0;return Array.from({ length: 6 }, randomOrder);}
+const CRIT_LABELS = { tiempo_produccion: 'Producción', tiempo_entrega: 'Entrega', prioridad: 'Prioridad' };
+
+/* ── App ──────────────────────────────────────── */
+function App() {
+  const [masterOrders, setMasterOrders] = useState(initOrders);
+  const [display, setDisplay] = useState(null);
+  const [criterion, setCriterion] = useState('tiempo_produccion');
+  const [ascending, setAscending] = useState(true);
+  const [speed, setSpeed] = useState(550);
+  const [status, setStatus] = useState('idle');
+  const [comparing, setComparing] = useState([]);
+  const [swapping, setSwapping] = useState([]);
+  const [sorted, setSorted] = useState([]);
+  const [activeLine, setActiveLine] = useState(null);
+  const [comparisons, setComparisons] = useState(0);
+  const [swaps, setSwaps] = useState(0);
+  const [iteration, setIteration] = useState(0);
+  const [statusMsg, setStatusMsg] = useState('');
+  /* form */
+  const [fNombre, setFNombre] = useState('');
+  const [fProd, setFProd] = useState('');
+  const [fEntr, setFEntr] = useState('');
+  const [fPri, setFPri] = useState('');
+  /* chart sizing */
+  const chartRef = useRef(null);
+  const [chartH, setChartH] = useState(300);
+  /* control refs */
+  const pauseRef = useRef(false);
+  const cancelRef = useRef(false);
+  const speedRef = useRef(speed);
+
+  useEffect(() => {speedRef.current = speed;}, [speed]);
+
+  useEffect(() => {
+    if (!chartRef.current) return;
+    const obs = new ResizeObserver(([e]) => setChartH(Math.max(e.contentRect.height - 30, 60)));
+    obs.observe(chartRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  const shown = display ?? masterOrders;
+
+  const resetAnim = () => {
+    setComparing([]);setSwapping([]);setSorted([]);
+    setActiveLine(null);setComparisons(0);setSwaps(0);
+    setIteration(0);setStatusMsg('');
+  };
+
+  /* ── Add order */
+  const handleAdd = () => {
+    if (status === 'running') return;
+    const nombre = fNombre.trim() || 'Pedido';
+    const prod = Math.min(250, Math.max(10, parseInt(fProd) || 60));
+    const entr = Math.min(400, Math.max(30, parseInt(fEntr) || 120));
+    const prio = Math.min(5, Math.max(1, parseInt(fPri) || 3));
+    setMasterOrders((prev) => [...prev, mkOrder(nombre, prod, entr, prio)]);
+    setDisplay(null);resetAnim();setStatus('idle');
+    setFNombre('');setFProd('');setFEntr('');setFPri('');
+  };
+
+  /* ── Generate batch */
+  const handleGenerate = () => {
+    if (status === 'running') return;
+    cancelRef.current = true;pauseRef.current = false;
+    const orders = Array.from({ length: 6 }, randomOrder);
+    setMasterOrders(orders);setDisplay(null);setStatus('idle');resetAnim();
+  };
+
+  /* ── Remove one */
+  const handleRemove = (id) => {
+    if (status === 'running') return;
+    setMasterOrders((prev) => prev.filter((o) => o.id !== id));
+    setDisplay(null);resetAnim();setStatus('idle');
+  };
+
+  /* ── Clear all */
+  const handleClear = () => {
+    if (status === 'running') return;
+    cancelRef.current = true;pauseRef.current = false;
+    _uid = 0;setMasterOrders([]);setDisplay(null);setStatus('idle');resetAnim();
+  };
+
+  /* ── Reset */
+  const handleReset = () => {
+    cancelRef.current = true;pauseRef.current = false;
+    setTimeout(() => {setDisplay(null);setStatus('idle');resetAnim();}, 60);
+  };
+
+  /* ── Pause / Resume */
+  const handlePause = () => {
+    if (status === 'running') {
+      pauseRef.current = true;setStatus('paused');setStatusMsg('Pausado.');
+    } else if (status === 'paused') {
+      pauseRef.current = false;setStatus('running');
+    }
+  };
+
+  /* ── Run sort */
+  const handleStart = async () => {
+    if (status === 'running' || masterOrders.length < 2) return;
+    cancelRef.current = false; pauseRef.current = false;
+
+    const A = masterOrders.map(o => ({ ...o }));
+    let cmp = 0, swp = 0;
+    const sortedSet = new Set();
+
+    const tick       = ()  => new Promise(r => setTimeout(r, speedRef.current));
+    const waitResume = ()  => new Promise(r => { const c = () => pauseRef.current ? setTimeout(c, 80) : r(); c(); });
+    const dead       = ()  => cancelRef.current;
+
+    // Force every animation frame to paint immediately — fixes React 18 batching
+    const show = (s) => {
+      ReactDOM.flushSync(() => {
+        setActiveLine(s.line  ?? null);
+        setComparing(s.cmp   ?? []);
+        setSwapping(s.swp    ?? []);
+        if (s.sorted     !== undefined) setSorted(s.sorted);
+        if (s.comparisons !== undefined) setComparisons(s.comparisons);
+        if (s.swaps      !== undefined) setSwaps(s.swaps);
+        if (s.iter       !== undefined) setIteration(s.iter);
+        if (s.msg        !== undefined) setStatusMsg(s.msg);
+        if (s.display    !== undefined) setDisplay(s.display);
+      });
+    };
+
+    // Init
+    ReactDOM.flushSync(() => {
+      setComparing([]); setSwapping([]); setSorted([]);
+      setActiveLine(0); setComparisons(0); setSwaps(0);
+      setIteration(0); setStatusMsg('');
+      setDisplay([...A]); setStatus('running');
+    });
+    await tick();
+
+    try {
+      const n = A.length;
+      show({ line: 1 }); await tick();
+
+      for (let i = 0; i < n - 1; i++) {
+        await waitResume(); if (dead()) return;
+        show({ line: 2, iter: i + 1 }); await tick();
+
+        for (let j = 0; j < n - i - 1; j++) {
+          await waitResume(); if (dead()) return;
+          show({ line: 3 }); await tick();
+
+          // ── Compare
+          cmp++;
+          show({
+            line: 4,
+            cmp: [j, j + 1],
+            comparisons: cmp,
+            display: [...A],
+            msg: `Comparando: ${A[j].nombre} (${A[j][criterion]}) vs ${A[j+1].nombre} (${A[j+1][criterion]})`
+          });
+          await tick();
+
+          const doSwap = ascending
+            ? A[j][criterion] > A[j + 1][criterion]
+            : A[j][criterion] < A[j + 1][criterion];
+
+          if (doSwap) {
+            swp++;
+            // ── Show red before swapping
+            show({
+              line: 5,
+              swp: [j, j + 1],
+              swaps: swp,
+              display: [...A],
+              msg: `↔ Intercambiando: ${A[j].nombre} ↔ ${A[j+1].nombre}`
+            });
+            await tick();
+            // ── Actually swap
+            [A[j], A[j + 1]] = [A[j + 1], A[j]];
+            show({ line: 5, swp: [j, j + 1], swaps: swp, display: [...A] });
+            await tick();
+          }
+
+          show({ line: 6 }); await tick();
+        }
+
+        // ── Mark last element of pass as sorted
+        sortedSet.add(n - 1 - i);
+        show({ line: 7, sorted: [...sortedSet], display: [...A] });
+        await tick();
+      }
+
+      // ── All sorted
+      const allSorted = Array.from({ length: n }, (_, k) => k);
+      show({ line: 8, sorted: allSorted, display: [...A] }); await tick();
+      show({ line: 9, sorted: allSorted });
+
+      ReactDOM.flushSync(() => {
+        setComparing([]); setSwapping([]);
+        setMasterOrders([...A]); setDisplay(null);
+        setStatus('done');
+        setStatusMsg(`✓ Completo — ${cmp} comparaciones, ${swp} intercambios`);
+      });
+
+    } catch (e) { if (e !== 'cancel') throw e; }
+  };
+
+  const maxVal = Math.max(...shown.map((o) => o[criterion]), 1);
+  const bState = (i) => swapping.includes(i) ? 'swapping' : comparing.includes(i) ? 'comparing' : sorted.includes(i) ? 'sorted' : 'normal';
+  const rCls = (i) => swapping.includes(i) ? 'row-swp' : comparing.includes(i) ? 'row-cmp' : sorted.includes(i) ? 'row-srt' : '';
+  const short = (s) => s.length > 9 ? s.slice(0, 8) + '…' : s;
+
+  const statusCls = { idle: 'idle', running: 'running', paused: 'paused', done: 'done' }[status];
+  const statusTxt = { idle: 'IDLE', running: 'SORTING', paused: 'PAUSED', done: 'DONE' }[status];
+  const isRunning = status === 'running';
+  const canRun = status === 'idle' && shown.length >= 2;
+  const canPause = status === 'running' || status === 'paused';
+  const canReset = status !== 'idle';
+
+  return (
+    <div className="shell">
+
+      {/* ── HEADER ── */}
+      <header className="hdr">
+        <span className="hdr-title">Bubble Sort</span>
+        <div className="hdr-divider" />
+        <span className="hdr-sub">Simulador · Gestión de Pedidos</span>
+        <div className="hdr-spacer" />
+        <span className={`status-badge ${statusCls}`}>{statusTxt}</span>
+      </header>
+
+      {/* ── FORM BAR ── */}
+      <div className="form-bar">
+        <input className="input-name" placeholder="Nombre del pedido"
+        value={fNombre} onChange={(e) => setFNombre(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleAdd()} disabled={isRunning} />
+        <input className="input-num" placeholder="Prod (min)" type="number" min={10} max={250}
+        value={fProd} onChange={(e) => setFProd(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleAdd()} disabled={isRunning} />
+        <input className="input-num" placeholder="Entr (min)" type="number" min={30} max={400}
+        value={fEntr} onChange={(e) => setFEntr(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleAdd()} disabled={isRunning} />
+        <input style={{ width: 80 }} placeholder="Prioridad" type="number" min={1} max={5}
+        value={fPri} onChange={(e) => setFPri(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleAdd()} disabled={isRunning} />
+        <button className="btn-add" onClick={handleAdd} disabled={isRunning}>+ Agregar</button>
+        <div className="form-sep" />
+        <button className="btn-secondary" onClick={handleGenerate} disabled={isRunning}>Aleatorios</button>
+        <button className="btn-danger" onClick={handleClear} disabled={isRunning}>Limpiar todo</button>
+      </div>
+
+      {/* ── WORKSPACE ── */}
+      <div className="workspace">
+
+        {/* LEFT */}
+        <aside className="left-panel">
+          <div className="panel-head">Pseudocódigo</div>
+          <div className="pseudo-block">
+            <div className="pseudocode">
+              {PSEUDO.map((l) =>
+              <span key={l.id} className={`pline${activeLine === l.id ? ' active' : ''}${status === 'done' && l.id < 9 ? ' done-line' : ''}`}>
+                  {l.text}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="metrics-strip">
+            <div className="metric-cell">
+              <span className="metric-n">{comparisons}</span>
+              <span className="metric-lbl">Comp.</span>
+            </div>
+            <div className="metric-cell">
+              <span className={`metric-n${swaps > 0 ? ' accent' : ''}`}>{swaps}</span>
+              <span className="metric-lbl">Swap</span>
+            </div>
+            <div className="metric-cell">
+              <span className="metric-n">{iteration}</span>
+              <span className="metric-lbl">Iter.</span>
+            </div>
+            <div className="metric-cell">
+              <span className={`metric-n${sorted.length > 0 ? ' green' : ''}`}>{sorted.length}</span>
+              <span className="metric-lbl">Ord.</span>
+            </div>
+          </div>
+          <div className="status-line">
+            {statusMsg ?
+            statusMsg.startsWith('↔') ?
+            <span className="hl">{statusMsg}</span> :
+            statusMsg :
+            <span style={{ color: '#3a3a3a' }}>—</span>}
+          </div>
+        </aside>
+
+        {/* CENTER — chart */}
+        <main className="chart-panel" ref={chartRef}>
+          <div className="chart-legend-row">
+            <div className="legend-item"><div className="legend-dot" style={{ background: '#3d4451' }} />Normal</div>
+            <div className="legend-item"><div className="legend-dot" style={{ background: '#f0a030' }} />Comparando</div>
+            <div className="legend-item"><div className="legend-dot" style={{ background: '#e05040' }} />Intercambiando</div>
+            <div className="legend-item"><div className="legend-dot" style={{ background: '#4aaa5a' }} />Ordenado</div>
+            <span className="chart-crit-label">{CRIT_LABELS[criterion]} · {ascending ? '↑ asc' : '↓ desc'}</span>
+          </div>
+          <div className="chart-body">
+            {/* grid lines */}
+            <div className="chart-grid">
+              {[0, 1, 2, 3, 4].map((i) => <div key={i} className="chart-grid-line" />)}
+            </div>
+            {shown.length === 0 &&
+            <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d1d5db', fontSize: 12 }}>
+                Agrega pedidos para comenzar
+              </div>
+            }
+            {shown.map((o, i) => {
+              const st = bState(i);
+              const h = Math.max(Math.round(o[criterion] / maxVal * chartH * 0.90), Math.round(chartH * 0.10));
+              return (
+                <div className="bar-col" key={o.id}>
+                  <span className={`bar-val${st === 'comparing' ? ' cmp' : st === 'swapping' ? ' swp' : st === 'sorted' ? ' srt' : ''}`}>
+                    {o[criterion]}
+                  </span>
+                  <div className={`bar ${st}`} style={{ height: h }} />
+                  <div className="bar-id">P{o.id}</div>
+                </div>);
+
+            })}
+          </div>
+        </main>
+
+        {/* RIGHT — table */}
+        <aside className="right-panel">
+          <div className="table-header-row">
+            <span className="panel-head" style={{ padding: 0, borderBottom: 'none' }}>Pedidos ({shown.length})</span>
+          </div>
+          <div className="table-scroll">
+            {shown.length === 0 ?
+            <div className="empty-table">Sin pedidos. Agrega uno arriba.</div> :
+
+            <table>
+                  <colgroup>
+                    <col style={{ width: 18 }} />
+                    <col style={{ width: 26 }} />
+                    <col />
+                    <col style={{ width: 36 }} />
+                    <col style={{ width: 38 }} />
+                    <col style={{ width: 24 }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th></th>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th className={criterion === 'tiempo_produccion' ? 'ac' : ''}>Prod</th>
+                      <th className={criterion === 'tiempo_entrega' ? 'ac' : ''}>Entr</th>
+                      <th className={criterion === 'prioridad' ? 'ac' : ''}>Pri</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shown.map((o, i) =>
+                <tr key={o.id} className={rCls(i)}>
+                        <td style={{ padding: '3px 2px' }}>
+                          <button className="remove-btn" onClick={() => handleRemove(o.id)} disabled={isRunning} title="Eliminar">✕</button>
+                        </td>
+                        <td className="dim">P{o.id}</td>
+                        <td style={{ fontSize: 11 }}>{o.nombre}</td>
+                        <td className={criterion === 'tiempo_produccion' ? 'ac' : 'mono'}>{o.tiempo_produccion}</td>
+                        <td className={criterion === 'tiempo_entrega' ? 'ac' : 'mono'}>{o.tiempo_entrega}</td>
+                        <td className={criterion === 'prioridad' ? 'ac' : 'mono'}>{o.prioridad}</td>
+                      </tr>
+                )}
+                  </tbody>
+                </table>
+
+            }
+          </div>
+        </aside>
+      </div>
+
+      {/* ── CONTROLS BAR ── */}
+      <footer className="controls-bar">
+        <div className="ctrl-group">
+          <span className="ctrl-label">Criterio</span>
+          <select className="ctrl-select" value={criterion} onChange={(e) => setCriterion(e.target.value)} disabled={isRunning}>
+            <option value="tiempo_produccion">Producción</option>
+            <option value="tiempo_entrega">Entrega</option>
+            <option value="prioridad">Prioridad</option>
+          </select>
+        </div>
+        <div className="ctrl-sep" />
+        <div className="ctrl-group">
+          <span className="ctrl-label">Orden</span>
+          <select className="ctrl-select" value={ascending ? 'asc' : 'desc'} onChange={(e) => setAscending(e.target.value === 'asc')} disabled={isRunning}>
+            <option value="asc">Ascendente ↑</option>
+            <option value="desc">Descendente ↓</option>
+          </select>
+        </div>
+        <div className="ctrl-sep" />
+        <div className="ctrl-group ctrl-range">
+          <span className="ctrl-label">Velocidad</span>
+          <input type="range" min={60} max={1400} step={40} value={speed} onChange={(e) => setSpeed(+e.target.value)} />
+          <span className="speed-val">{speed}ms</span>
+        </div>
+        <div className="ctrl-sep" />
+        <div className="ctrl-group" style={{ gap: 6 }}>
+          <button className="btn btn-run" onClick={handleStart} disabled={!canRun}>▶ Iniciar</button>
+          <button className="btn btn-pause" onClick={handlePause} disabled={!canPause}>
+            {status === 'paused' ? '▶ Reanudar' : '⏸ Pausar'}
+          </button>
+          <button className="btn btn-reset" onClick={handleReset} disabled={!canReset}>↺ Reiniciar</button>
+        </div>
+        <div className="ctrl-status">
+          {statusMsg ?
+          statusMsg.startsWith('↔') ?
+          <span className="hl">{statusMsg}</span> :
+          statusMsg :
+          shown.length < 2 ?
+          'Agrega al menos 2 pedidos' :
+          `Listo · ${shown.length} pedidos · ${CRIT_LABELS[criterion]}`}
+        </div>
+      </footer>
+    </div>);
+
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
